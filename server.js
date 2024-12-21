@@ -5,15 +5,18 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const authRoutes = require('./routes/Auth');
 const practiceRoutes = require('./routes/Practice');
-const analysisRoutes = require('./routes/analysis');
+const companyRoutes = require('./routes/Company');
+const interviewRoutes = require('./routes/Interview');
+
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
+
 // Çevresel Değişkenleri Kullanma
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI;
 
 // MongoDB Bağlantısı
@@ -50,7 +53,12 @@ app.get('/api/user/profile', async (req, res) => {
 });
 
 app.use('/api', practiceRoutes); 
-app.use('/api', analysisRoutes);
+app.use('/api/companies', companyRoutes);
+app.use('/api/interviews', interviewRoutes);
+
+
+
+
 // Sunucu Başlatma
 app.listen(PORT, () => 
   console.log(`Server http://localhost:${PORT} üzerinde çalışıyor...`)

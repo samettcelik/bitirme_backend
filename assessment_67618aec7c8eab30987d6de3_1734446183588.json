@@ -1,0 +1,7 @@
+{
+  "questionId": "67618aec7c8eab30987d6de3",
+  "userId": null,
+  "assessmentReport": "Genel ve Doğru Bilgi (45/50): Python programlama dilinin ne olduğu, hangi özelliklere sahip olduğu ve kullanım alanları doğru bir şekilde ifade edilmiştir. Ancak Python'ın yayınlandığı yıl ve yazarının adı yanlış yazılmış, doğrusu 1991 yılında Guido van Rossum olarak belirtilmeliydi.\n\nÖrneklerle Anlatım (30/30): Konuşmacı, Python'ın farklı kullanım alanları için örnekler vermiş ve bu alanlarda Python'un nasıl kullanılabileceğini ifade etmiştir. Bunlar arasında endüstri 4.0, geliştirme, makine öğrenimi, bilimsel hesaplamalar, oyun geliştirme, web geliştirme ve otomasyon alanları bulunmaktadır. Özellikle makine learning ve otomasyon konularında detaylı örnekler üzerinden anlatım yapılmıştır.\n\nÇalışma Deneyimleri (20/20): Konuşmacı, okulda yaptığı bir proje konusunda Python dilini kullanım hakkında bilgi vermiştir. Bu da konuşmacının konu hakkında kişisel deneyime sahip olduğunu göstermektedir.\n\nToplam:  95/100\n",
+  "totalScore": 95,
+  "timestamp": "2024-12-17T14:36:23.588Z"
+}

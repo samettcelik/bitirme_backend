@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const multer = require('multer');
+const path = require('path');
 
 const UserSchema = new mongoose.Schema({
   username: { 
