@@ -258,4 +258,186 @@ router.get('/:uniqueUrl/all-results', companyAuth, async (req, res) => {
   }
 });
 
+router.get('/company/all', companyAuth, async (req, res) => {
+  try {
+    const interviews = await Interview.find({ companyId: req.company._id })
+      .select('mulakatAdi uniqueUrl createdAt participants questions');
+    
+    const formattedInterviews = interviews.map(interview => ({
+      id: interview._id,
+      mulakatAdi: interview.mulakatAdi,
+      url: `/interview/${interview.uniqueUrl}`,
+      createdAt: interview.createdAt,
+      katilimciSayisi: interview.participants.length,
+      soruSayisi: interview.questions.length
+    }));
+
+    res.json({
+      count: interviews.length,
+      interviews: formattedInterviews
+    });
+
+  } catch (error) {
+    console.error('Mülakatları getirme hatası:', error);
+    res.status(500).json({
+      message: 'Mülakatlar getirilemedi',
+      error: error.message
+    });
+  }
+});
+
+router.get('/:uniqueUrl/all-results', companyAuth, async (req, res) => {
+  try {
+    const { uniqueUrl } = req.params;
+
+    const interview = await Interview.findOne({ uniqueUrl });
+    if (!interview) {
+      return res.status(404).json({ message: 'Mülakat bulunamadı' });
+    }
+
+    const results = interview.participants.map(participant => ({
+      firstName: participant.firstName,
+      lastName: participant.lastName,
+      email: participant.email,
+      status: participant.completedAt ? 'Tamamlandı' : 'Devam Ediyor',
+      registeredAt: participant.registeredAt,
+      completedAt: participant.completedAt,
+      overallScores: participant.overallScores,
+      responseCount: participant.responses.length
+    }));
+
+    res.json({
+      mulakatAdi: interview.mulakatAdi,
+      questionCount: interview.questions.length,
+      participantCount: interview.participants.length,
+      results
+    });
+
+  } catch (error) {
+    console.error('Sonuçlar getirme hatası:', error);
+    res.status(500).json({
+      message: 'Sonuçlar getirilemedi',
+      error: error.message
+    });
+  }
+});
+
+router.get('/company/all-interview-results', companyAuth, async (req, res) => {
+  try {
+    // Şirkete ait tüm mülakatları bul
+    const interviews = await Interview.find({ companyId: req.company._id });
+
+    // Her mülakat için sonuçları topla
+    const interviewResults = await Promise.all(interviews.map(async (interview) => {
+      // Katılımcı sonuçlarını hazırla
+      const participantResults = interview.participants.map(participant => ({
+        firstName: participant.firstName,
+        lastName: participant.lastName,
+        email: participant.email,
+        status: participant.completedAt ? 'Tamamlandı' : 'Devam Ediyor',
+        registeredAt: participant.registeredAt,
+        completedAt: participant.completedAt,
+        overallScores: participant.overallScores,
+        responseCount: participant.responses.length
+      }));
+
+      // Mülakat detaylarını ve sonuçlarını birleştir
+      return {
+        id: interview._id,
+        mulakatAdi: interview.mulakatAdi,
+        url: `/interview/${interview.uniqueUrl}`,
+        createdAt: interview.createdAt,
+        questionCount: interview.questions.length,
+        participantCount: interview.participants.length,
+        results: participantResults,
+        
+        // İstatistikler
+        statistics: {
+          tamamlananMulakatSayisi: participantResults.filter(p => p.status === 'Tamamlandı').length,
+          devamEdenMulakatSayisi: participantResults.filter(p => p.status === 'Devam Ediyor').length,
+          ortalamaBasariPuani: participantResults
+            .filter(p => p.overallScores && p.overallScores.length > 0)
+            .reduce((acc, curr) => {
+              const avgScore = curr.overallScores.reduce((sum, score) => sum + score, 0) / curr.overallScores.length;
+              return acc + avgScore;
+            }, 0) / (participantResults.filter(p => p.overallScores && p.overallScores.length > 0).length || 1)
+        }
+      };
+    }));
+
+    // Sonuçları gönder
+    res.json({
+      totalInterviewCount: interviews.length,
+      totalParticipantCount: interviews.reduce((acc, interview) => acc + interview.participants.length, 0),
+      interviews: interviewResults
+    });
+
+  } catch (error) {
+    console.error('Mülakat sonuçları getirme hatası:', error);
+    res.status(500).json({
+      message: 'Mülakat sonuçları getirilemedi',
+      error: error.message
+    });
+  }
+});
+
+// Detaylı mülakat sonuçlarını getirme endpoint'i
+router.get('/interview-detail/:interviewId/:participantEmail', companyAuth, async (req, res) => {
+  try {
+    const { interviewId, participantEmail } = req.params;
+
+    const interview = await Interview.findOne({ 
+      _id: interviewId,
+      companyId: req.company._id
+    });
+
+    if (!interview) {
+      return res.status(404).json({ message: 'Mülakat bulunamadı' });
+    }
+
+    const participant = interview.participants.find(p => p.email === participantEmail);
+    
+    if (!participant) {
+      return res.status(404).json({ message: 'Katılımcı bulunamadı' });
+    }
+
+    // Detaylı bilgileri hazırla
+    const detailedResults = {
+      interview: {
+        id: interview._id,
+        mulakatAdi: interview.mulakatAdi,
+        questions: interview.questions,
+        duygusalDegerlendirme: interview.duygusalDegerlendirme,
+        teknikDegerlendirme: interview.teknikDegerlendirme,
+      },
+      participant: {
+        firstName: participant.firstName,
+        lastName: participant.lastName,
+        email: participant.email,
+        registeredAt: participant.registeredAt,
+        completedAt: participant.completedAt,
+        status: participant.completedAt ? 'Tamamlandı' : 'Devam Ediyor',
+        overallScores: participant.overallScores,
+        responses: participant.responses.map(response => ({
+          questionId: response.questionId,
+          questionNumber: response.questionNumber,
+          questionText: response.questionText,
+          speechToText: response.speechToText,
+          emotionAnalysis: response.emotionAnalysis,
+          knowledgeAnalysis: response.knowledgeAnalysis
+        }))
+      }
+    };
+
+    res.json(detailedResults);
+
+  } catch (error) {
+    console.error('Detaylı sonuç getirme hatası:', error);
+    res.status(500).json({
+      message: 'Detaylı sonuçlar getirilemedi',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
